@@ -4,7 +4,7 @@
 echo "Converting ICRL JSONL to H5 format..."
 
 python3 ../../icrl_generate_h5.py \
-  --input_jsonl "input_jsonl/icrl_data.jsonl" \
+  --input_jsonl "input_jsonl/sample_icrl_data.jsonl" \
   --output_h5 "output_h5/icrl_episodes.h5" \
   --tokenizer_path "../../tokenizer/world" \
   --ctx_len 4096 \

@@ -18,16 +18,16 @@ def load_tokenizer(tokenizer_path: str):
     """Load the appropriate tokenizer"""
     try:
         if 'world' in tokenizer_path:
-            from world import TRIE_TOKENIZER
+            from tokenizer.rwkv_tokenizer import TRIE_TOKENIZER
             return TRIE_TOKENIZER(tokenizer_path)
         else:
             # Try other tokenizer types as fallback
-            from world import TRIE_TOKENIZER
+            from tokenizer.rwkv_tokenizer import TRIE_TOKENIZER
             return TRIE_TOKENIZER('tokenizer/world')
     except Exception as e:
         print(f"Error loading tokenizer: {e}")
         print("Using default world tokenizer")
-        from world import TRIE_TOKENIZER
+        from tokenizer.rwkv_tokenizer import TRIE_TOKENIZER
         return TRIE_TOKENIZER('tokenizer/world')
 
 

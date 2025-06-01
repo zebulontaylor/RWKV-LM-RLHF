@@ -68,6 +68,25 @@ if __name__ == "__main__":
     parser.add_argument("--grpo_gen_topp", default=0.7, type=float)
     parser.add_argument("--grpo_kl_beta", default=0.1, type=float)
 
+    # ICRL (In-Context Reinforcement Learning) parameters
+    parser.add_argument("--icrl", default=0, type=int)  # Enable ICRL mode
+    parser.add_argument("--icrl_bootstrap", default=0, type=int)  # Enable bootstrap stage
+    parser.add_argument("--icrl_reward_model", default=0, type=int)  # Enable reward model training
+    parser.add_argument("--icrl_value_head", default=1, type=int)  # Enable value head
+    parser.add_argument("--icrl_k_exemplars", default=3, type=int)  # Number of exemplars per episode
+    parser.add_argument("--icrl_n_queries", default=1, type=int)  # Number of query pairs per episode
+    parser.add_argument("--icrl_episode_length", default=2048, type=int)  # Maximum tokens per episode
+    parser.add_argument("--icrl_ppo_epochs", default=4, type=int)  # PPO epochs per batch
+    parser.add_argument("--icrl_kl_beta", default=0.01, type=float)  # KL penalty coefficient
+    parser.add_argument("--icrl_entropy_beta", default=0.01, type=float)  # Entropy bonus coefficient
+    parser.add_argument("--icrl_epsilon_mixture", default=0.1, type=float)  # ε-mixture probability
+    parser.add_argument("--icrl_reward_model_path", default="", type=str)  # Path to trained reward model
+    parser.add_argument("--icrl_gen_count", default=4, type=int)  # Generation count for PPO
+    parser.add_argument("--icrl_gen_length", default=512, type=int)  # Generation length for PPO
+    parser.add_argument("--icrl_gen_temperature", default=1.0, type=float)  # Generation temperature
+    parser.add_argument("--icrl_gen_topp", default=0.9, type=float)  # Generation top-p
+    parser.add_argument("--icrl_clip_ratio", default=0.2, type=float)  # PPO clip ratio
+    parser.add_argument("--icrl_value_loss_coef", default=0.5, type=float)  # Value loss coefficient
 
     parser.add_argument("--epoch_steps", default=1000, type=int)  # a mini "epoch" has [epoch_steps] steps
     parser.add_argument("--epoch_count", default=500, type=int)  # train for this many "epochs". will continue afterwards with lr = lr_final
@@ -370,6 +389,13 @@ if __name__ == "__main__":
         from src.cotdataset import RLHFDataset
         dpo_train_data = RLHFDataset(args,args.rlhf_train_file,args.ctx_len)
 
+    # ICRL dataset loading
+    if args.icrl or args.icrl_bootstrap or args.icrl_reward_model:
+        print('ICRL mode - loading episodic dataset')
+        os.environ["H5_MODE"] = "1"
+        from src.icrldataset import ICRLDataset, collate_icrl_batch
+        icrl_data = ICRLDataset(args, args.train_data_file, args.ctx_len)
+
     
 
     if args.distillation:
@@ -602,6 +628,18 @@ if __name__ == "__main__":
                               strict=False)
         
 
+    # Setup ICRL components
+    if args.icrl or args.icrl_bootstrap or args.icrl_reward_model or args.icrl_value_head:
+        from src.icrl import add_icrl_value_head, setup_icrl_models, patch_icrl_methods
+        
+        # Add value head if requested
+        add_icrl_value_head(model, args)
+        
+        # Setup reference and reward models
+        setup_icrl_models(model, args)
+        
+        # Patch ICRL methods into model
+        patch_icrl_methods(model.__class__)
 
     if args.quant and Realtime_Quant == False:
         rank_zero_info(f"########## Quant... ##########")
@@ -684,7 +722,11 @@ if __name__ == "__main__":
 
         #combined_loader = CombinedLoader([data_loader, dpo_loader], "min_size")
         trainer.fit(model, dpo_loader)
-    if args.distillation:
+    if args.icrl or args.icrl_bootstrap or args.icrl_reward_model:
+        print("ICRL (In-Context Reinforcement Learning) Mode")
+        icrl_loader = DataLoader(icrl_data, shuffle=False, pin_memory=True, batch_size=args.micro_bsz, num_workers=1, persistent_workers=False, drop_last=True, collate_fn=collate_icrl_batch)
+        trainer.fit(model, icrl_loader)
+    elif args.distillation:
         print('Distillation Training Mode')
         print('This feature is still in experiment')
         print('')

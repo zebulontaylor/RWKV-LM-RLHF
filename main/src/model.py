@@ -1464,6 +1464,14 @@ class RWKV(pl.LightningModule):
             
             args = self.args
 
+            # ICRL (In-Context Reinforcement Learning) training
+            if args.icrl_bootstrap:
+                return self.training_step_icrl_bootstrap(batch, batch_idx)
+            elif args.icrl_reward_model:
+                return self.training_step_icrl_reward_model(batch, batch_idx)
+            elif args.icrl:
+                return self.training_step_icrl_ppo(batch, batch_idx)
+
             if args.zerocot:
                 return training_step_zerocot(self,batch,batch_idx)
             if args.grpo:

@@ -19,16 +19,24 @@ def load_tokenizer(tokenizer_path: str):
     try:
         if 'world' in tokenizer_path:
             from tokenizer.rwkv_tokenizer import TRIE_TOKENIZER
-            return TRIE_TOKENIZER(tokenizer_path)
+            # Fix: Point to the actual vocabulary file in the world directory
+            vocab_file = os.path.join(tokenizer_path, 'rwkv_vocab_v20230424.txt')
+            if os.path.exists(vocab_file):
+                return TRIE_TOKENIZER(vocab_file)
+            else:
+                # Fallback to the main tokenizer directory
+                vocab_file = 'tokenizer/rwkv_vocab_v20230424.txt'
+                return TRIE_TOKENIZER(vocab_file)
         else:
             # Try other tokenizer types as fallback
             from tokenizer.rwkv_tokenizer import TRIE_TOKENIZER
-            return TRIE_TOKENIZER('tokenizer/world')
+            return TRIE_TOKENIZER('tokenizer/rwkv_vocab_v20230424.txt')
     except Exception as e:
         print(f"Error loading tokenizer: {e}")
         print("Using default world tokenizer")
         from tokenizer.rwkv_tokenizer import TRIE_TOKENIZER
-        return TRIE_TOKENIZER('tokenizer/world')
+        # Fix: Use the actual vocabulary file path
+        return TRIE_TOKENIZER('tokenizer/rwkv_vocab_v20230424.txt')
 
 
 def convert_icrl_jsonl_to_h5(input_jsonl: str, output_h5: str, tokenizer_path: str, 

@@ -12,3 +12,4 @@ h5py
 torchao
 safetensors
 git+https://github.com/fla-org/flash-linear-attention
+google-genai

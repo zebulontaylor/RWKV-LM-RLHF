@@ -87,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument("--icrl_gen_topp", default=0.9, type=float)  # Generation top-p
     parser.add_argument("--icrl_clip_ratio", default=0.2, type=float)  # PPO clip ratio
     parser.add_argument("--icrl_value_loss_coef", default=0.5, type=float)  # Value loss coefficient
+    parser.add_argument("--icrl_data_file", default="dataset.json", type=str)  # path to ICRL dataset JSON
 
     parser.add_argument("--epoch_steps", default=1000, type=int)  # a mini "epoch" has [epoch_steps] steps
     parser.add_argument("--epoch_count", default=500, type=int)  # train for this many "epochs". will continue afterwards with lr = lr_final
@@ -206,6 +207,9 @@ if __name__ == "__main__":
     #parser.add_argument("--accelerator", default="gpu", type=str)
 
     parser.add_argument("--rms_norm_eps", default=1e-6, type=float)
+
+    parser.add_argument("--gemini_api_key", default="", type=str)  # Gemini API key for ICRL
+    parser.add_argument("--gemini_model", default="gemini-2.0-flash-thinking-exp", type=str)  # Gemini model name for ICRL
 
     if pl.__version__[0]=='2':
         parser.add_argument("--accelerator", default="gpu", type=str)
@@ -394,7 +398,7 @@ if __name__ == "__main__":
         print('ICRL mode - loading episodic dataset')
         os.environ["H5_MODE"] = "1"
         from src.icrldataset import ICRLDataset, collate_icrl_batch
-        icrl_data = ICRLDataset(args, args.train_data_file, args.ctx_len)
+        icrl_data = ICRLDataset(args, args.icrl_data_file, args.ctx_len)
 
     
 
